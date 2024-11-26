@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- 메타 정보 및 문서 설정 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Video Processing</title>
+    <!-- Font Awesome 아이콘 라이브러리 추가 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 알림창 스타일 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 알림창 표시 애니메이션 */
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 알림창 종류별 스타일 */
+        .notification-success { background-color: var(--success-color); }
+        .notification-error { background-color: var(--error-color); }
+        .notification-info { background-color: var(--accent-color); }
+
+        /* 전역 색상 변수 정의 */
+        :root {
+            --primary-color: #6c5ce7;    /* 기본 강조색 */
+            --accent-color: #00cec9;     /* 보조 강조색 */
+            --background-dark: #1a1a1a;  /* 어두운 배경색 */
+            --background-light: #2d2d2d; /* 밝은 배경색 */
+            --text-primary: #ffffff;     /* 기본 텍스트 색상 */
+            --text-secondary: #a0a0a0;   /* 보조 텍스트 색상 */
+            --success-color: #00b894;    /* 성공 상태 색상 */
+            --warning-color: #fdcb6e;    /* 경고 상태 색상 */
+            --error-color: #d63031;      /* 오류 상태 색상 */
+        }
+
+        /* 기본 스타일 초기화 및 폰트 설정 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        /* 바디 스타일 */
+        body {
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        /* 컨테이너 레이아웃 */
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+
+        /* 메인 콘텐츠 영역 */
+        .main-content {
+            background-color: var(--background-light);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 헤더 스타일 */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        /* 제목 스타일 */
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* 라이브 뱃지 스타일 */
+        .live-badge {
+            background-color: var(--success-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* 라이브 뱃지 아이콘 */
+        .live-badge i {
+            font-size: 0.75rem;
+        }
+
+        /* 비디오 컨테이너 */
+        .video-container {
+            position: relative;
+            width: 100%;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background-color: var(--background-dark);
+        }
+
+        /* 비디오 스트림 */
+        .video-stream {
+            width: 100%;
+            display: block;
+            border-radius: 0.75rem;
+            transition: opacity 0.3s ease;
+        }
+
+        /* 사이드바 */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* 카드 컴포넌트 */
+        .card {
+            background-color: var(--background-light);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 카드 제목 */
+        .card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+
+        /* 메트릭스 그리드 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        /* 메트릭 아이템 */
+        .metric-item {
+            background-color: var(--background-dark);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        /* 메트릭 값 */
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            margin-bottom: 0.25rem;
+        }
+
+        /* 메트릭 라벨 */
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* 컨트롤 섹션 */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* 선택 박스 스타일 */
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.25rem;
+        }
+
+        /* 버튼 기본 스타일 */
+        .btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        /* 버튼 종류별 스타일 */
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #5f52d9;
+        }
+
+        .btn-secondary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #00b5b5;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: #2d3436;
+        }
+
+        .btn-warning:hover {
+            background-color: #ffc04d;
+        }
+
+        /* 선택적 모드 입력 스타일 */
+        .mode-input {
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .mode-input.hidden {
+            display: none;
+        }
+
+        .mode-input input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--text-secondary);
+        }
+
+        .mode-input input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        /* 모드 정보 박스 */
+        .mode-info {
+            background-color: var(--background-dark);
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        /* 모드 정보 제목 */
+        .mode-info h3 {
+            color: var(--accent-color);
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        /* 모드 정보 내용 */
+        .mode-info p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            line-height: 1.5;
+        }
+
+        /* 라이브 표시기 애니메이션 */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* 라이브 표시기 */
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            background-color: #ff0000;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+            margin-right: 0.5rem;
+        }
+
+        /* 툴팁 컨테이너 */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        /* 툴팁 텍스트 */
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            text-align: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* 툴팁 호버 효과 */
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- 메인 컨테이너 -->
+    <div class="container">
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <div class="header">
+                <h1>
+                    <i class="fas fa-video"></i>
+                    실시간 영상 처리 시스템
+                </h1>
+                <div class="live-badge">
+                    <span class="live-indicator"></span>
+                    실시간
+                </div>
+            </div>
+            <div class="video-container">
+                <img class="video-stream" src="{{ url_for('video_feed') }}" alt="비디오 스트림">
+            </div>
+        </main>
+
+        <!-- 사이드바 -->
+        <aside class="sidebar">
+            <!-- 성능 지표 섹션 -->
+            <section class="card">
+                <h2><i class="fas fa-chart-line"></i> 성능 지표</h2>
+                <div class="metrics-grid">
+                    <div class="metric-item tooltip">
+                        <div class="metric-value" id="fps">--</div>
+                        <div class="metric-label">FPS</div>
+                        <span class="tooltiptext">초당 프레임 수</span>
+                    </div>
+                    <div class="metric-item tooltip">
+                        <div class="metric-value" id="latency">--</div>
+                        <div class="metric-label">지연 시간 (ms)</div>
+                        <span class="tooltiptext">처리 지연 시간</span>
+                    </div>
+                    <div class="metric-item tooltip">
+                        <div class="metric-value" id="resolution">1370x736</div>
+                        <div class="metric-label">해상도</div>
+                        <span class="tooltiptext">영상 해상도</span>
+                    </div>
+                    <div class="metric-item tooltip">
+                        <div class="metric-value" id="processed-frames">--</div>
+                        <div class="metric-label">처리 프레임</div>
+                        <span class="tooltiptext">총 처리된 프레임 수</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 제어 섹션 -->
+            <section class="card">
+                <h2><i class="fas fa-sliders-h"></i> 제어</h2>
+                <div class="controls">
+                    <!-- 모드 선택 -->
+                    <select id="mosaic-mode" class="tooltip">
+                        <option value="all">전체 모자이크</option>
+                        <option value="selective">선택적 모자이크</option>
+                        <option value="none">자동 감지</option>
+                    </select>
+
+                    <!-- 선택적 모드 입력 필드 -->
+                    <div id="selective-input" class="mode-input hidden">
+                        <input type="text" id="host-ids" class="w-full p-2 rounded bg-gray-800 text-white border border-gray-600" 
+                               placeholder="호스트 ID 입력 (예: 1,2,3)">
+                        <p class="text-sm text-gray-400 mt-1">제외할 ID를 쉼표로 구분하여 입력하세요</p>
+                    </div>
+                    
+                    <!-- 모드 적용 버튼 -->
+                    <button class="btn btn-primary" onclick="applyMode()">
+                        <i class="fas fa-check"></i>
+                        모드 적용
+                    </button>
+                    
+                    <!-- 스트리밍 재시작 버튼 -->
+                    <button class="btn btn-secondary" onclick="restartStream()">
+                        <i class="fas fa-redo"></i>
+                        스트리밍 재시작
+                    </button>
+                    
+                    <!-- 일시정지 버튼 -->
+                    <button class="btn btn-warning" id="pause-stream" onclick="togglePause()">
+                        <i class="fas fa-pause"></i>
+                        일시 정지
+                    </button>
+
+                    <!-- 모드 설명 -->
+                    <div class="mode-info">
+                        <h3><i class="fas fa-info-circle"></i> 모드 설명</h3>
+                        <p id="mode-info">
+                            <strong>전체 모자이크:</strong> 영상에서 감지되는 모든 사람에게 모자이크를 적용합니다.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <!-- 자바스크립트 코드 -->
+    <script>
+        // 서버 URL 상수 정의
+        const SERVER_URL = 'http://localhost:8000';
+        const CLIENT_URL = 'http://localhost:8001';
+
+        // 전역 변수 설정
+        let isPaused = false;
+        const stream = document.querySelector('.video-stream');
+        const pauseButton = document.getElementById('pause-stream');
+
+        // 성능 지표 업데이트 함수
+        async function updateMetrics() {
+            try {
+                const response = await fetch('http://localhost:8000/metrics');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                
+                if (!data.error) {
+                    document.getElementById('fps').textContent = data.fps.toFixed(1);
+                    document.getElementById('latency').textContent = (data.avg_processing_time * 1000).toFixed(1);
+                    document.getElementById('processed-frames').textContent = data.total_frames.toLocaleString();
+                }
+            } catch (error) {
+                console.error('메트릭 업데이트 오류:', error);
+            }
+        }
+
+        // 선택적 모드 입력 필드 토글
+        document.getElementById('mosaic-mode').addEventListener('change', function() {
+            const selectiveInput = document.getElementById('selective-input');
+            if (this.value === 'selective') {
+                selectiveInput.classList.remove('hidden');
+            } else {
+                selectiveInput.classList.add('hidden');
+            }
+        });
+
+        // 모드 적용 함수
+        async function applyMode() {
+        const mode = document.getElementById('mosaic-mode').value;
+        const button = document.querySelector('.btn-primary');
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 적용 중...';
+
+        try {
+            let selectedIds = [];
+            if (mode === 'selective') {
+                const hostIds = document.getElementById('host-ids').value.trim();
+                if (!hostIds) {
+                    showNotification('추가로 Host를 입력해주세요', 'error');
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-check"></i> 모드 적용';
+                    return;
+                }
+                selectedIds = hostIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            }
+
+            const response = await fetch('http://localhost:8000/update_mode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    mode: mode,
+                    selected_ids: selectedIds 
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                showNotification('모드가 성공적으로 적용되었습니다', 'success');
+                // location.reload(); // 새로고침 제거하여 ID 입력값 유지
+            } else {
+                showNotification('모드 적용 실패: ' + data.message, 'error');
+            }
+        } catch (error) {
+            console.error('모드 업데이트 오류:', error);
+            showNotification('모드 적용 중 오류 발생', 'error');
+        } finally {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-check"></i> 모드 적용';
+        }
+    }
+
+        // 스트리밍 재시작 함수
+        async function restartStream() {
+            const button = document.querySelector('.btn-secondary');
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 재시작 중...';
+
+            try {
+                const response = await fetch(`${SERVER_URL}/restart`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    stream.src = `${CLIENT_URL}/video_feed?t=${new Date().getTime()}`;
+                    showNotification('스트리밍이 재시작되었습니다', 'success');
+                } else {
+                    showNotification('스트리밍 재시작 실패', 'error');
+                }
+            } catch (error) {
+                console.error('Restart error:', error);
+                showNotification('재시작 중 오류 발생', 'error');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-redo"></i> 스트리밍 재시작';
+            }
+        }
+
+        // 일시정지 토글 함수
+        function togglePause() {
+            isPaused = !isPaused;
+            stream.style.opacity = isPaused ? '0.5' : '1';
+            const icon = isPaused ? 'fa-play' : 'fa-pause';
+            const text = isPaused ? '재생' : '일시정지';
+            pauseButton.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+            showNotification(isPaused ? '스트리밍이 일시정지되었습니다' : '스트리밍이 재개되었습니다', 'info');
+        }
+
+        // 알림 표시 함수
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // 초기화 및 이벤트 리스너 설정
+        document.addEventListener('DOMContentLoaded', () => {
+            // 초기 메트릭 업데이트
+            updateMetrics();
+            // 1초마다 메트릭 업데이트
+            setInterval(updateMetrics, 1000);
+            
+            // 모드 설명 업데이트 이벤트 리스너
+            document.getElementById('mosaic-mode').addEventListener('change', function() {
+                const descriptions = {
+                    'all': '영상에서 감지되는 모든 사람에게 모자이크를 적용합니다.',
+                    'selective': '선택된 사람들에게만 모자이크를 적용합니다.',
+                    'none': '시스템이 자동으로 주요 인물을 판단하여 모자이크를 적용합니다.'
+                };
+                
+                document.getElementById('mode-info').innerHTML = `<strong>${this.options[this.selectedIndex].text}:</strong> ${descriptions[this.value]}`;
+            });
+        });
+    </script>
+</body>
+</html>
