@@ -24,7 +24,7 @@ import os
 from collections import deque  # deque import 추가
 
 
-VIDEO_PATH = "/home/ubuntu/AI-Semi/contest/dataset/video/과즙세연1.mp4"
+VIDEO_PATH = "/home/ubuntu/AI-Semi/contest/dataset/video/손흥민1.mp4"
 
 logging.basicConfig(
     level=logging.DEBUG,

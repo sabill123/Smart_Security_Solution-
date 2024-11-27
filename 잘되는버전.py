@@ -1421,15 +1421,8 @@ class VideoProcessingServer:
                         
                     x1, y1, x2, y2 = map(int, track_info['bbox'])
                     
-                    # 바운딩 박스 및 라벨 표시
+                    # 호스트 여부 확인
                     is_host = track_id in self.excluded_ids
-                    color = (0, 255, 0) if is_host else (0, 0, 255)
-                    cv2.rectangle(result, (x1, y1), (x2, y2), color, 2)
-                    
-                    # ID와 호스트 상태 표시
-                    label = f"ID:{track_id} ({track_info['confidence']:.2f}) host:{'y' if is_host else 'n'}"
-                    cv2.putText(result, label, (x1, y1-10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
                     # 모자이크 처리 - 호스트가 아닌 경우만
                     if not is_host:
