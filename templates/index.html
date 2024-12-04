@@ -489,6 +489,7 @@
 
         // 모드 적용 함수
         async function applyMode() {
+<<<<<<< HEAD
             const mode = document.getElementById('mosaic-mode').value;
             const button = document.querySelector('.btn-primary');
             button.disabled = true;
@@ -554,6 +555,53 @@
                 button.innerHTML = '<i class="fas fa-check"></i> 모드 적용';
             }
         }
+=======
+        const mode = document.getElementById('mosaic-mode').value;
+        const button = document.querySelector('.btn-primary');
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 적용 중...';
+
+        try {
+            let selectedIds = [];
+            if (mode === 'selective') {
+                const hostIds = document.getElementById('host-ids').value.trim();
+                if (!hostIds) {
+                    showNotification('추가로 Host를 입력해주세요', 'error');
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-check"></i> 모드 적용';
+                    return;
+                }
+                selectedIds = hostIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            }
+
+            const response = await fetch('http://localhost:8000/update_mode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    mode: mode,
+                    selected_ids: selectedIds 
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                showNotification('모드가 성공적으로 적용되었습니다', 'success');
+                // location.reload(); // 새로고침 제거하여 ID 입력값 유지
+            } else {
+                showNotification('모드 적용 실패: ' + data.message, 'error');
+            }
+        } catch (error) {
+            console.error('모드 업데이트 오류:', error);
+            showNotification('모드 적용 중 오류 발생', 'error');
+        } finally {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-check"></i> 모드 적용';
+        }
+    }
+>>>>>>> 73c528f1247d8e1d77b7a47b16c39b4b093a9773
 
         // 스트리밍 재시작 함수
         async function restartStream() {
@@ -573,10 +621,14 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
+<<<<<<< HEAD
                     // 스트림 새로고침
                     const stream = document.querySelector('.video-stream');
                     const timestamp = new Date().getTime();
                     stream.src = `${CLIENT_URL}/video_feed?t=${timestamp}`;
+=======
+                    stream.src = `${CLIENT_URL}/video_feed?t=${new Date().getTime()}`;
+>>>>>>> 73c528f1247d8e1d77b7a47b16c39b4b093a9773
                     showNotification('스트리밍이 재시작되었습니다', 'success');
                 } else {
                     showNotification('스트리밍 재시작 실패', 'error');
@@ -591,6 +643,7 @@
         }
 
         // 일시정지 토글 함수
+<<<<<<< HEAD
         async function togglePause() {
             try {
                 const response = await fetch(`${SERVER_URL}/pause`, {
@@ -608,6 +661,15 @@
                 console.error('Pause toggle error:', error);
                 showNotification('일시정지 전환 중 오류 발생', 'error');
             }
+=======
+        function togglePause() {
+            isPaused = !isPaused;
+            stream.style.opacity = isPaused ? '0.5' : '1';
+            const icon = isPaused ? 'fa-play' : 'fa-pause';
+            const text = isPaused ? '재생' : '일시정지';
+            pauseButton.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+            showNotification(isPaused ? '스트리밍이 일시정지되었습니다' : '스트리밍이 재개되었습니다', 'info');
+>>>>>>> 73c528f1247d8e1d77b7a47b16c39b4b093a9773
         }
 
         // 알림 표시 함수
