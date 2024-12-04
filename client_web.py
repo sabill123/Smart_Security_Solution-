@@ -24,11 +24,7 @@ import os
 from collections import deque  # deque import 추가
 
 
-<<<<<<< HEAD
 VIDEO_PATH = "/home/ubuntu/AI-Semi/contest/dataset/video/남순영상3.mp4"
-=======
-VIDEO_PATH = "/home/ubuntu/AI-Semi/contest/dataset/video/손흥민1.mp4"
->>>>>>> 73c528f1247d8e1d77b7a47b16c39b4b093a9773
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -439,10 +435,6 @@ class VideoClient:
                     frame_count += 1
                     if frame_count % 30 == 0:
                         current_fps = 30 / (time.time() - last_frame_time)
-<<<<<<< HEAD
-=======
-                        logging.info(f"Streaming FPS: {current_fps:.2f}")
->>>>>>> 73c528f1247d8e1d77b7a47b16c39b4b093a9773
                         last_frame_time = current_time
                         
                 except Exception as e:
@@ -667,7 +659,6 @@ def parse_args():
     return parser.parse_args()
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     import uvicorn
     import asyncio
     from pathlib import Path
@@ -691,29 +682,3 @@ if __name__ == "__main__":
         port=8001,
         log_level="info"
     )
-=======
-    logging.basicConfig(level=logging.INFO)
-    
-    args = parse_args()
-    logging.info(f"Starting video client with video: {args.video_path}")
-    
-    # templates 디렉토리 생성 및 확인
-    templates_dir = Path("templates")
-    templates_dir.mkdir(exist_ok=True)
-    
-    if not (templates_dir / "index.html").exists():
-        logging.error("index.html not found in templates directory")
-        raise FileNotFoundError("index.html not found in templates directory")
-    
-    # FastAPI 실행
-    config = uvicorn.Config(
-        "client_web:app",
-        host="0.0.0.0",
-        port=8001,
-        reload=True,  # 개발 중 자동 리로드 활성화
-        reload_dirs=["templates"],  # 템플릿 디렉토리 변경 감지
-        log_level="info"
-    )
-    server = uvicorn.Server(config)
-    asyncio.run(server.serve())
->>>>>>> 73c528f1247d8e1d77b7a47b16c39b4b093a9773
