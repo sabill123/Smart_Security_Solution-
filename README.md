@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/e0164d41-68ec-43f9-84fa-e560727c30e1)# NPU 기반 스마트 보안 솔루션  
+# NPU 기반 스마트 보안 솔루션  
 **실시간 개인정보 보호 시스템**
 
 ---
@@ -21,8 +21,7 @@
 - **SAM Tiny**: 얼굴 세그멘테이션 경량화 모델  
 - **SAMURAI Light**: 경량화된 객체 추적 모델
 
-![image](https://github.com/user-attachments/assets/e7b8c595-5e2f-4829-a55f-0b5a11d69e1f)
-
+![image](https://github.com/user-attachments/assets/e0164d41-68ec-43f9-84fa-e560727c30e1)
 
 ### 2. **기술 특징**  
 - **NPU 병렬 처리**: 4개 PE를 활용하여 탐지, 세그멘테이션, 추적 병렬화  
